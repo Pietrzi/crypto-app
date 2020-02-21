@@ -3,12 +3,16 @@ import './App.css';
 import WelcomeText from './WelcomeText';
 import AppLayout from './AppLayout';
 import AppBar from './AppBar';
+import { AppProvider } from './AppProvider';
+
 
 function App() {
   return (
     <AppLayout>
-      <AppBar />
-      <WelcomeText />
+      <AppProvider>
+        <AppBar />
+        <WelcomeText />
+      </AppProvider>
     </AppLayout>
   );
 }
