@@ -1,5 +1,5 @@
 import React from 'react';
-import {AppContext} from "../App/AppProvider";
+import {AppContext} from "../AppProvider";
 
 export default function ({name, children}) {
   return <AppContext.Consumer>
