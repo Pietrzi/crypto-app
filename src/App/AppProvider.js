@@ -6,6 +6,8 @@ const cc = require('cryptocompare');
 
 export const AppContext = React.createContext();
 
+const TIME_UNITS = 10;
+
 export class AppProvider extends React.Component {
     constructor(props) {
         super(props);
@@ -23,12 +25,28 @@ export class AppProvider extends React.Component {
 
     componentDidMount = () => {
         this.fetchCoins();
+        this.fetchHistorical();
     }
 
     fetchCoins = async () => {
         let coinList = (await cc.coinList()).Data;
         this.setState({coinList});
     }
+
+    fetchHistorical = async () => {
+        if (this.state.firstVisit) return;
+        let results = await this.historical();
+        let historical = [
+          {
+            name: this.state.currentFavorite,
+            data: results.map((ticker, index) => [
+              moment().subtract({[this.state.timeInterval]: TIME_UNITS - index}).valueOf(),
+              ticker.USD
+            ])
+          }
+        ]
+        this.setState({historical});
+      }
 
     removeCoin = key => {
         let favorites = [...this.state.favorites];
