@@ -1,6 +1,6 @@
 import React from 'react';
 import styled, {css} from 'styled-components';
-import {AppContext} from '../AppProvider';
+import {AppContext} from '../App/AppProvider';
 import CoinTile from "./CoinTile";
 
 

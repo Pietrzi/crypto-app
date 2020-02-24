@@ -6,6 +6,7 @@ const cc = require('cryptocompare');
 
 export const AppContext = React.createContext();
 
+const MAX_FAVORITES = 10;
 const TIME_UNITS = 10;
 
 export class AppProvider extends React.Component {
@@ -19,18 +20,31 @@ export class AppProvider extends React.Component {
              confirmFavorites: this.confirmFavorites,
              removeCoin: this.removeCoin,
              isInFavorites: this.isInFavorites,
-             setCurrentFavorite: this.setCurrentFavorite
+             setCurrentFavorite: this.setCurrentFavorite,
+             favorites: ['BTC', 'ETH', 'XMR', 'DOGE'],
+             timeInterval: 'months',
+             addCoin: this.addCoin,
+             setFilteredCoins: this.setFilteredCoins,
+             changeChartSelect: this.changeChartSelect
         }
     }
 
     componentDidMount = () => {
         this.fetchCoins();
+        this.fetchPrices();
         this.fetchHistorical();
     }
 
     fetchCoins = async () => {
         let coinList = (await cc.coinList()).Data;
         this.setState({coinList});
+    }
+
+    fetchPrices = async () => {
+        if(this.state.firstVisit) return;
+        let prices = await this.prices();
+        prices = prices.filter(price => Object.keys(price).length);
+        this.setState({prices});
     }
 
     fetchHistorical = async () => {
@@ -48,20 +62,65 @@ export class AppProvider extends React.Component {
         this.setState({historical});
       }
 
+    prices = async () => {
+    let returnData = [];
+    for(let i = 0; i < this.state.favorites.length; i++){
+        try {
+        let priceData = await cc.priceFull(this.state.favorites[i], 'USD');
+        returnData.push(priceData);
+        } catch (e){
+        console.warn('Fetch price error: ', e);
+        }
+    }
+    return returnData;
+    }
+
+    historical = () => {
+        let promises = [];
+        for (let units = TIME_UNITS; units > 0; units--){
+          promises.push(
+            cc.priceHistorical(
+              this.state.currentFavorite,
+              ['USD'],
+              moment()
+              .subtract({[this.state.timeInterval]: units})
+              .toDate()
+            )
+          )
+        }
+        return Promise.all(promises);
+    }
+    
+    addCoin = key => {
+    let favorites = [...this.state.favorites];
+    if(favorites.length < MAX_FAVORITES){
+        favorites.push(key);
+        this.setState({favorites});
+        }
+    }
+
     removeCoin = key => {
         let favorites = [...this.state.favorites];
         this.setState({favorites: _.pull(favorites, key)})
-      }
+    }
     
     isInFavorites = key => _.includes(this.state.favorites, key)
 
     confirmFavorites = () => {
+        let currentFavorite = this.state.favorites[0];
         this.setState({
-            firstVisit: false,
-            page: 'dashboard'
-        });
+        firstVisit: false,
+        page: 'dashboard',
+        currentFavorite,
+        prices: null,
+        historical: null
+    }, () => {
+            this.fetchPrices();
+            this.fetchHistorical();
+    });
         localStorage.setItem('cryptoDash', JSON.stringify({
-            test: 'hello'
+        favorites: this.state.favorites,
+        currentFavorite
         }));
     }
 
@@ -75,17 +134,24 @@ export class AppProvider extends React.Component {
           ...JSON.parse(localStorage.getItem('cryptoDash')),
           currentFavorite: sym
         }))
-      }
+    }
 
     savedSettings() {
         let cryptoDashData = JSON.parse(localStorage.getItem('cryptoDash'));
-        if(!cryptoDashData) {
-            return {page: 'settings', firstVisit: true}
+        if(!cryptoDashData){
+        return {page: 'settings', firstVisit: true}
         }
-        return {};
+        let {favorites, currentFavorite} = cryptoDashData;
+        return {favorites, currentFavorite};
     }
      
     setPage = page => this.setState({ page });
+
+    setFilteredCoins = (filteredCoins) => this.setState({filteredCoins})
+
+    changeChartSelect = (value) => {
+        this.setState({timeInterval: value, historical: null}, this.fetchHistorical);
+    }
 
     render() {
         return (
