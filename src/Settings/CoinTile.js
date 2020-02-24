@@ -1,8 +1,8 @@
 import React from 'react';
 import {AppContext} from "../App/AppProvider";
-import {SelectableTile} from "../App/Shared/Tile";
+import {SelectableTile} from "../Shared/Tile";
 import CoinHeaderGrid from './CoinHeaderGrid';
-import CoinImage from '../App/Shared/CoinImage';
+import CoinImage from '../Shared/CoinImage';
 
 
 export default function({coinKey}) {
